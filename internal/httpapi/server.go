@@ -20,6 +20,7 @@ func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealth)
 	mux.HandleFunc("POST /v1/monitors", s.handleCreateMonitor)
+	mux.HandleFunc("GET /v1/monitors", s.handleListMonitors)
 	return mux
 }
 
@@ -41,6 +42,16 @@ func (s *Server) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, item)
+}
+
+func (s *Server) handleListMonitors(w http.ResponseWriter, r *http.Request) {
+	items, err := s.monitors.List(r.Context())
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, items)
 }
 
 func writeError(w http.ResponseWriter, err error) {

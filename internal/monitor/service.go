@@ -48,3 +48,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (Monitor, error
 
 	return s.store.Save(ctx, item)
 }
+
+func (s *Service) List(ctx context.Context) ([]Monitor, error) {
+	return s.store.List(ctx)
+}
