@@ -52,3 +52,11 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (Monitor, error
 func (s *Service) List(ctx context.Context) ([]Monitor, error) {
 	return s.store.List(ctx)
 }
+
+func (s *Service) Get(ctx context.Context, id int64) (Monitor, error) {
+	if id < 1 {
+		return Monitor{}, apperror.New(apperror.Validation, "monitor id must be positive", nil)
+	}
+
+	return s.store.FindByID(ctx, id)
+}

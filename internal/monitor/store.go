@@ -4,11 +4,14 @@ import (
 	"context"
 	"sort"
 	"sync"
+
+	"github.com/Nosk0v/pulsewatch/internal/apperror"
 )
 
 type Store interface {
 	Save(ctx context.Context, monitor Monitor) (Monitor, error)
 	List(ctx context.Context) ([]Monitor, error)
+	FindByID(ctx context.Context, id int64) (Monitor, error)
 }
 
 type MemoryStore struct {
@@ -49,4 +52,16 @@ func (s *MemoryStore) List(_ context.Context) ([]Monitor, error) {
 	})
 
 	return items, nil
+}
+
+func (s *MemoryStore) FindByID(_ context.Context, id int64) (Monitor, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	item, ok := s.monitors[id]
+	if !ok {
+		return Monitor{}, apperror.New(apperror.NotFound, "monitor not found", nil)
+	}
+
+	return item, nil
 }

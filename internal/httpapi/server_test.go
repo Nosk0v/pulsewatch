@@ -78,3 +78,34 @@ func TestListMonitors(t *testing.T) {
 		t.Fatalf("expected both monitors, got: %s", recorder.Body.String())
 	}
 }
+
+func TestGetMonitor(t *testing.T) {
+	server := NewServer(monitor.NewService(monitor.NewMemoryStore()))
+	body := []byte(`{"name":"main API","target_url":"https://example.com/health","interval_seconds":60}`)
+	createRequest := httptest.NewRequest(http.MethodPost, "/v1/monitors", bytes.NewReader(body))
+	server.Routes().ServeHTTP(httptest.NewRecorder(), createRequest)
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/monitors/1", nil)
+	recorder := httptest.NewRecorder()
+	server.Routes().ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, recorder.Code, recorder.Body.String())
+	}
+
+	if !bytes.Contains(recorder.Body.Bytes(), []byte(`"name":"main API"`)) {
+		t.Fatalf("expected created monitor, got: %s", recorder.Body.String())
+	}
+}
+
+func TestGetMonitorReturnsNotFound(t *testing.T) {
+	server := NewServer(monitor.NewService(monitor.NewMemoryStore()))
+	req := httptest.NewRequest(http.MethodGet, "/v1/monitors/99", nil)
+	recorder := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusNotFound, recorder.Code, recorder.Body.String())
+	}
+}
