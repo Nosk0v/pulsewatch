@@ -1,67 +1,103 @@
 # PulseWatch
 
-Self-hosted uptime monitor for HTTP endpoints.
+An HTTP uptime-monitoring API written in Go.
 
-PulseWatch creates HTTP monitors, stores them in memory for the first phase and runs a manual availability check on demand.
+PulseWatch lets you register HTTP endpoints and run availability checks on demand. It is being built in small, production-shaped phases: the current version is a tested vertical slice with an in-memory store; PostgreSQL, scheduling, and observability come next.
 
-## Фаза 1 — API мониторов
+## Features
 
-Готовим вертикальный срез без scheduler и PostgreSQL:
+- Create and list HTTP monitors;
+- Fetch a monitor by ID;
+- Run a manual HTTP availability check;
+- Validate target URLs and check intervals;
+- Return consistent JSON errors;
+- Test every public endpoint.
 
-- `GET /healthz`;
-- `POST /v1/monitors`;
-- `GET /v1/monitors`;
-- `GET /v1/monitors/{id}`;
-- `POST /v1/monitors/{id}/checks`.
+## API
 
-Каждый endpoint покрывается тестом и получает отдельный Git-коммит.
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/healthz` | Service health check |
+| `POST` | `/v1/monitors` | Create a monitor |
+| `GET` | `/v1/monitors` | List monitors |
+| `GET` | `/v1/monitors/{id}` | Get a monitor |
+| `POST` | `/v1/monitors/{id}/checks` | Run a one-off HTTP check |
 
-`POST /v1/monitors/{id}/checks` запускает разовую HTTP-проверку и возвращает её статус. Планировщик повторных проверок и PostgreSQL — следующая фаза.
-
-### Создание монитора
-
-```json
-{
-  "name": "main API",
-  "target_url": "https://example.com/health",
-  "interval_seconds": 60
-}
-```
-
-Эндпоинт должен вернуть `201 Created` и созданный монитор с `id` и `created_at`.
-
-## Запуск
-
-```bash
-go test ./...
-go run ./cmd/api
-```
-
-Сервер слушает `http://localhost:8080`.
-
-### Быстрая проверка
+### Create a monitor
 
 ```bash
 curl -X POST http://localhost:8080/v1/monitors \
   -H 'Content-Type: application/json' \
-  -d '{"name":"GitHub API","target_url":"https://api.github.com","interval_seconds":60}'
+  -d '{
+    "name": "GitHub API",
+    "target_url": "https://api.github.com",
+    "interval_seconds": 60
+  }'
+```
 
-curl http://localhost:8080/v1/monitors
+The target URL must use `http` or `https`; intervals must be at least 30 seconds.
+
+### Run a check
+
+```bash
 curl -X POST http://localhost:8080/v1/monitors/1/checks
 ```
 
-## Структура
+Checks consider any `2xx` or `3xx` response successful. The response includes the observed status and check metadata.
 
-- `cmd/api` — точка входа;
-- `internal/monitor` — модель, сервис и временное хранилище в памяти;
-- `internal/httpapi` — HTTP-маршруты и handler.
-- `internal/apperror` — типизированные ошибки приложения.
+## Getting started
 
-## Следующая фаза
+### Prerequisites
 
-- PostgreSQL и миграции вместо памяти;
-- scheduler повторных проверок и worker;
-- история проверок;
-- Docker Compose и observability.
+- Go 1.23 or newer
 
-PostgreSQL, scheduler и worker появятся после рабочего API. Сначала один понятный вертикальный срез.
+### Run locally
+
+```bash
+git clone https://github.com/Nosk0v/pulsewatch.git
+cd pulsewatch
+go run ./cmd/api
+```
+
+The API starts on `http://localhost:8080`.
+
+### Test
+
+```bash
+go test ./...
+```
+
+## Project structure
+
+```text
+cmd/api/              application entry point
+internal/apperror/    application error types and HTTP mapping
+internal/httpapi/     routes, handlers, and endpoint tests
+internal/monitor/     monitor domain, service, checker, and store
+docs/                 architecture notes
+```
+
+## Architecture
+
+The first phase deliberately runs as one Go process with an in-memory store. This keeps the API and domain boundaries clear before adding infrastructure. See [architecture notes](docs/architecture.md) for the current design and phase-two direction.
+
+## Roadmap
+
+- [x] HTTP monitor API and manual checks
+- [x] Endpoint tests and CI
+- [ ] PostgreSQL persistence and migrations
+- [ ] Scheduled checks and background workers
+- [ ] Check history and pagination
+- [ ] Docker Compose, metrics, and Grafana dashboard
+
+## Development
+
+```bash
+make fmt
+make test
+make run
+```
+
+## License
+
+This project is currently unlicensed. A license will be selected before the first public release.
