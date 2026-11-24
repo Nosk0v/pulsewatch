@@ -14,6 +14,8 @@ Self-hosted uptime monitor for HTTP endpoints.
 
 Каждый endpoint покрывается тестом и получает отдельный Git-коммит.
 
+`POST /v1/monitors/{id}/checks` запускает разовую HTTP-проверку и возвращает её статус. Планировщик повторных проверок и PostgreSQL — следующая фаза.
+
 ### Создание монитора
 
 ```json

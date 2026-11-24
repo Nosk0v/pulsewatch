@@ -109,3 +109,27 @@ func TestGetMonitorReturnsNotFound(t *testing.T) {
 		t.Fatalf("expected status %d, got %d: %s", http.StatusNotFound, recorder.Code, recorder.Body.String())
 	}
 }
+
+func TestRunCheck(t *testing.T) {
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer target.Close()
+
+	server := NewServer(monitor.NewService(monitor.NewMemoryStore()))
+	body := []byte(`{"name":"main API","target_url":"` + target.URL + `","interval_seconds":60}`)
+	createRequest := httptest.NewRequest(http.MethodPost, "/v1/monitors", bytes.NewReader(body))
+	server.Routes().ServeHTTP(httptest.NewRecorder(), createRequest)
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/monitors/1/checks", nil)
+	recorder := httptest.NewRecorder()
+	server.Routes().ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d: %s", http.StatusOK, recorder.Code, recorder.Body.String())
+	}
+
+	if !bytes.Contains(recorder.Body.Bytes(), []byte(`"status":"up"`)) {
+		t.Fatalf("expected successful check, got: %s", recorder.Body.String())
+	}
+}

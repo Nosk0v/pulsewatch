@@ -10,14 +10,16 @@ import (
 )
 
 type Service struct {
-	store Store
-	now   func() time.Time
+	store   Store
+	checker Checker
+	now     func() time.Time
 }
 
 func NewService(store Store) *Service {
 	return &Service{
-		store: store,
-		now:   time.Now,
+		store:   store,
+		checker: NewHTTPChecker(10 * time.Second),
+		now:     time.Now,
 	}
 }
 
@@ -59,4 +61,17 @@ func (s *Service) Get(ctx context.Context, id int64) (Monitor, error) {
 	}
 
 	return s.store.FindByID(ctx, id)
+}
+
+func (s *Service) RunCheck(ctx context.Context, id int64) (CheckResult, error) {
+	item, err := s.Get(ctx, id)
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	result := s.checker.Check(ctx, item.TargetURL)
+	result.MonitorID = item.ID
+	result.CheckedAt = s.now().UTC()
+
+	return s.store.SaveCheck(ctx, result)
 }

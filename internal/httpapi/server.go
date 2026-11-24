@@ -23,6 +23,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("POST /v1/monitors", s.handleCreateMonitor)
 	mux.HandleFunc("GET /v1/monitors", s.handleListMonitors)
 	mux.HandleFunc("GET /v1/monitors/{id}", s.handleGetMonitor)
+	mux.HandleFunc("POST /v1/monitors/{id}/checks", s.handleRunCheck)
 	return mux
 }
 
@@ -70,6 +71,22 @@ func (s *Server) handleGetMonitor(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, item)
+}
+
+func (s *Server) handleRunCheck(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "monitor id must be a number"})
+		return
+	}
+
+	result, err := s.monitors.RunCheck(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
 }
 
 func writeError(w http.ResponseWriter, err error) {

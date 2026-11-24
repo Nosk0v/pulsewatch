@@ -12,18 +12,23 @@ type Store interface {
 	Save(ctx context.Context, monitor Monitor) (Monitor, error)
 	List(ctx context.Context) ([]Monitor, error)
 	FindByID(ctx context.Context, id int64) (Monitor, error)
+	SaveCheck(ctx context.Context, result CheckResult) (CheckResult, error)
 }
 
 type MemoryStore struct {
-	mu       sync.Mutex
-	nextID   int64
-	monitors map[int64]Monitor
+	mu          sync.Mutex
+	nextID      int64
+	monitors    map[int64]Monitor
+	nextCheckID int64
+	checks      map[int64][]CheckResult
 }
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		nextID:   1,
-		monitors: make(map[int64]Monitor),
+		nextID:      1,
+		monitors:    make(map[int64]Monitor),
+		nextCheckID: 1,
+		checks:      make(map[int64][]CheckResult),
 	}
 }
 
@@ -64,4 +69,15 @@ func (s *MemoryStore) FindByID(_ context.Context, id int64) (Monitor, error) {
 	}
 
 	return item, nil
+}
+
+func (s *MemoryStore) SaveCheck(_ context.Context, result CheckResult) (CheckResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	result.ID = s.nextCheckID
+	s.nextCheckID++
+	s.checks[result.MonitorID] = append(s.checks[result.MonitorID], result)
+
+	return result, nil
 }
