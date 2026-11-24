@@ -34,7 +34,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 func (s *Server) handleCreateMonitor(w http.ResponseWriter, r *http.Request) {
 	var input monitor.CreateInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
+		writeError(w, apperror.ErrInvalidJSON)
 		return
 	}
 
@@ -60,7 +60,7 @@ func (s *Server) handleListMonitors(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleGetMonitor(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "monitor id must be a number"})
+		writeError(w, apperror.ErrInvalidMonitorID)
 		return
 	}
 
@@ -76,7 +76,7 @@ func (s *Server) handleGetMonitor(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "monitor id must be a number"})
+		writeError(w, apperror.ErrInvalidMonitorID)
 		return
 	}
 

@@ -10,6 +10,11 @@ const (
 	Internal   Kind = "internal"
 )
 
+var (
+	ErrInvalidJSON      = New(Validation, "invalid JSON", nil)
+	ErrInvalidMonitorID = New(Validation, "monitor id must be a number", nil)
+)
+
 type Error struct {
 	Kind    Kind
 	Message string
