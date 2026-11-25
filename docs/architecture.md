@@ -13,7 +13,7 @@ flowchart LR
 
 ## Scope
 
-Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introduces a PostgreSQL schema, ready for a database-backed `Store`, while keeping the existing API contract unchanged.
+Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introduces PostgreSQL persistence behind the same `Store` contract. The API chooses PostgreSQL when `DATABASE_URL` is set and otherwise uses memory for quick local work.
 
 ## API
 
@@ -29,3 +29,4 @@ Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introd
 - HTTP checks mark `2xx` and `3xx` responses as `up`; network errors and `4xx`/`5xx` are `down`.
 - `internal/apperror` owns application error categories, so handlers consistently translate validation to `400` and absent data to `404`.
 - `migrations/001_initial_schema.sql` owns the initial PostgreSQL schema: monitors, check results, constraints, and the history lookup index.
+- `PostgresStore` maps database absence to the same `not_found` application error as the in-memory store.

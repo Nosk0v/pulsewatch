@@ -74,9 +74,11 @@ Phase 2 starts with PostgreSQL. The database schema is initialized automatically
 ```bash
 cp .env.example .env
 make db-up
+export DATABASE_URL='postgres://pulsewatch:pulsewatch@localhost:5432/pulsewatch?sslmode=disable'
+make run
 ```
 
-The development database listens on `localhost:5432`. At this stage, the API still uses the in-memory store by default; connecting it to the database is the next vertical slice.
+The development database listens on `localhost:5432`. When `DATABASE_URL` is set, the API uses PostgreSQL; without it, it uses the in-memory store for quick local development.
 
 ## Project structure
 
@@ -96,7 +98,7 @@ The first phase deliberately runs as one Go process with an in-memory store. Thi
 
 - [x] HTTP monitor API and manual checks
 - [x] Endpoint tests and CI
-- [ ] PostgreSQL persistence and migrations
+- [x] PostgreSQL persistence and migrations
 - [ ] Scheduled checks and background workers
 - [ ] Check history and pagination
 - [ ] Docker Compose, metrics, and Grafana dashboard
