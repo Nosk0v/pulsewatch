@@ -22,6 +22,7 @@ Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introd
 - `GET /v1/monitors` — list monitors;
 - `GET /v1/monitors/{id}` — read one monitor;
 - `POST /v1/monitors/{id}/checks` — run an HTTP check now.
+- `GET /v1/monitors/{id}/checks` — read a monitor's check history.
 
 ## Decisions
 

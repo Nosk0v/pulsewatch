@@ -75,3 +75,11 @@ func (s *Service) RunCheck(ctx context.Context, id int64) (CheckResult, error) {
 
 	return s.store.SaveCheck(ctx, result)
 }
+
+func (s *Service) ListChecks(ctx context.Context, id int64) ([]CheckResult, error) {
+	if _, err := s.Get(ctx, id); err != nil {
+		return nil, err
+	}
+
+	return s.store.ListChecks(ctx, id)
+}

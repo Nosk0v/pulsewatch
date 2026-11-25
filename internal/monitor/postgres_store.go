@@ -112,6 +112,32 @@ func (s *PostgresStore) SaveCheck(ctx context.Context, result CheckResult) (Chec
 	return result, nil
 }
 
+func (s *PostgresStore) ListChecks(ctx context.Context, monitorID int64) ([]CheckResult, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id, monitor_id, status, status_code, duration_ms, error, checked_at
+		FROM check_results
+		WHERE monitor_id = $1
+		ORDER BY checked_at DESC, id DESC`, monitorID)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	defer rows.Close()
+
+	items := make([]CheckResult, 0)
+	for rows.Next() {
+		item, err := scanCheckResult(rows)
+		if err != nil {
+			return nil, databaseError(err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, databaseError(err)
+	}
+
+	return items, nil
+}
+
 type rowScanner interface {
 	Scan(dest ...any) error
 }
@@ -119,6 +145,20 @@ type rowScanner interface {
 func scanMonitor(row rowScanner) (Monitor, error) {
 	var item Monitor
 	err := row.Scan(&item.ID, &item.Name, &item.TargetURL, &item.IntervalSeconds, &item.CreatedAt)
+	return item, err
+}
+
+func scanCheckResult(row rowScanner) (CheckResult, error) {
+	var item CheckResult
+	err := row.Scan(
+		&item.ID,
+		&item.MonitorID,
+		&item.Status,
+		&item.StatusCode,
+		&item.DurationMS,
+		&item.Error,
+		&item.CheckedAt,
+	)
 	return item, err
 }
 

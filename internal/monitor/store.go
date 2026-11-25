@@ -13,6 +13,7 @@ type Store interface {
 	List(ctx context.Context) ([]Monitor, error)
 	FindByID(ctx context.Context, id int64) (Monitor, error)
 	SaveCheck(ctx context.Context, result CheckResult) (CheckResult, error)
+	ListChecks(ctx context.Context, monitorID int64) ([]CheckResult, error)
 }
 
 type MemoryStore struct {
@@ -80,4 +81,16 @@ func (s *MemoryStore) SaveCheck(_ context.Context, result CheckResult) (CheckRes
 	s.checks[result.MonitorID] = append(s.checks[result.MonitorID], result)
 
 	return result, nil
+}
+
+func (s *MemoryStore) ListChecks(_ context.Context, monitorID int64) ([]CheckResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	items := append([]CheckResult(nil), s.checks[monitorID]...)
+	if items == nil {
+		items = make([]CheckResult, 0)
+	}
+
+	return items, nil
 }

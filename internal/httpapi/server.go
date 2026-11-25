@@ -24,6 +24,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("GET /v1/monitors", s.handleListMonitors)
 	mux.HandleFunc("GET /v1/monitors/{id}", s.handleGetMonitor)
 	mux.HandleFunc("POST /v1/monitors/{id}/checks", s.handleRunCheck)
+	mux.HandleFunc("GET /v1/monitors/{id}/checks", s.handleListChecks)
 	return mux
 }
 
@@ -87,6 +88,22 @@ func (s *Server) handleRunCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) handleListChecks(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		writeError(w, apperror.ErrInvalidMonitorID)
+		return
+	}
+
+	items, err := s.monitors.ListChecks(r.Context(), id)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, items)
 }
 
 func writeError(w http.ResponseWriter, err error) {
