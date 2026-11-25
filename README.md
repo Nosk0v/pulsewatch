@@ -67,6 +67,17 @@ The API starts on `http://localhost:8080`.
 go test ./...
 ```
 
+## Local PostgreSQL
+
+Phase 2 starts with PostgreSQL. The database schema is initialized automatically on its first Docker volume creation.
+
+```bash
+cp .env.example .env
+make db-up
+```
+
+The development database listens on `localhost:5432`. At this stage, the API still uses the in-memory store by default; connecting it to the database is the next vertical slice.
+
 ## Project structure
 
 ```text
