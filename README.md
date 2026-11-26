@@ -70,16 +70,19 @@ go test ./...
 
 ## Local PostgreSQL
 
-Phase 2 starts with PostgreSQL. The database schema is initialized automatically on its first Docker volume creation.
+Phase 2 runs the API and PostgreSQL together. The database schema is initialized automatically on its first Docker volume creation.
 
 ```bash
-cp .env.example .env
-make db-up
-export DATABASE_URL='postgres://pulsewatch:pulsewatch@localhost:5432/pulsewatch?sslmode=disable'
-make run
+make up
 ```
 
-The development database listens on `localhost:5432`. When `DATABASE_URL` is set, the API uses PostgreSQL; without it, it uses the in-memory store for quick local development.
+The API listens on `http://localhost:8080`; PostgreSQL listens on `localhost:5432`. When `DATABASE_URL` is set, the API uses PostgreSQL; without it, it uses the in-memory store for quick local development.
+
+To stop the stack:
+
+```bash
+make down
+```
 
 ## Project structure
 
