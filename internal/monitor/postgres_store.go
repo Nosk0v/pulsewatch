@@ -3,6 +3,7 @@ package monitor
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/Nosk0v/pulsewatch/internal/apperror"
 	"github.com/jackc/pgx/v5"
@@ -35,12 +36,12 @@ func (s *PostgresStore) Save(ctx context.Context, item Monitor) (Monitor, error)
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO monitors (name, target_url, interval_seconds, created_at)
 		VALUES ($1, $2, $3, $4)
-		RETURNING id, name, target_url, interval_seconds, created_at`,
+		RETURNING id, name, target_url, interval_seconds, created_at, last_checked_at`,
 		item.Name,
 		item.TargetURL,
 		item.IntervalSeconds,
 		item.CreatedAt,
-	).Scan(&item.ID, &item.Name, &item.TargetURL, &item.IntervalSeconds, &item.CreatedAt)
+	).Scan(&item.ID, &item.Name, &item.TargetURL, &item.IntervalSeconds, &item.CreatedAt, &item.LastCheckedAt)
 	if err != nil {
 		return Monitor{}, databaseError(err)
 	}
@@ -50,7 +51,7 @@ func (s *PostgresStore) Save(ctx context.Context, item Monitor) (Monitor, error)
 
 func (s *PostgresStore) List(ctx context.Context) ([]Monitor, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT id, name, target_url, interval_seconds, created_at
+		SELECT id, name, target_url, interval_seconds, created_at, last_checked_at
 		FROM monitors
 		ORDER BY id`)
 	if err != nil {
@@ -75,7 +76,7 @@ func (s *PostgresStore) List(ctx context.Context) ([]Monitor, error) {
 
 func (s *PostgresStore) FindByID(ctx context.Context, id int64) (Monitor, error) {
 	item, err := scanMonitor(s.pool.QueryRow(ctx, `
-		SELECT id, name, target_url, interval_seconds, created_at
+		SELECT id, name, target_url, interval_seconds, created_at, last_checked_at
 		FROM monitors
 		WHERE id = $1`, id))
 	if err != nil {
@@ -86,7 +87,13 @@ func (s *PostgresStore) FindByID(ctx context.Context, id int64) (Monitor, error)
 }
 
 func (s *PostgresStore) SaveCheck(ctx context.Context, result CheckResult) (CheckResult, error) {
-	err := s.pool.QueryRow(ctx, `
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return CheckResult{}, databaseError(err)
+	}
+	defer tx.Rollback(ctx)
+
+	err = tx.QueryRow(ctx, `
 		INSERT INTO check_results (monitor_id, status, status_code, duration_ms, error, checked_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, monitor_id, status, status_code, duration_ms, error, checked_at`,
@@ -106,6 +113,18 @@ func (s *PostgresStore) SaveCheck(ctx context.Context, result CheckResult) (Chec
 		&result.CheckedAt,
 	)
 	if err != nil {
+		return CheckResult{}, databaseError(err)
+	}
+
+	_, err = tx.Exec(ctx, `
+		UPDATE monitors
+		SET last_checked_at = GREATEST(last_checked_at, $1)
+		WHERE id = $2`, result.CheckedAt, result.MonitorID)
+	if err != nil {
+		return CheckResult{}, databaseError(err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
 		return CheckResult{}, databaseError(err)
 	}
 
@@ -138,13 +157,41 @@ func (s *PostgresStore) ListChecks(ctx context.Context, monitorID int64) ([]Chec
 	return items, nil
 }
 
+func (s *PostgresStore) ListDue(ctx context.Context, before time.Time, limit int) ([]Monitor, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id, name, target_url, interval_seconds, created_at, last_checked_at
+		FROM monitors
+		WHERE last_checked_at IS NULL
+		   OR last_checked_at + interval_seconds * INTERVAL '1 second' <= $1
+		ORDER BY last_checked_at NULLS FIRST, id
+		LIMIT $2`, before, limit)
+	if err != nil {
+		return nil, databaseError(err)
+	}
+	defer rows.Close()
+
+	items := make([]Monitor, 0)
+	for rows.Next() {
+		item, err := scanMonitor(rows)
+		if err != nil {
+			return nil, databaseError(err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, databaseError(err)
+	}
+
+	return items, nil
+}
+
 type rowScanner interface {
 	Scan(dest ...any) error
 }
 
 func scanMonitor(row rowScanner) (Monitor, error) {
 	var item Monitor
-	err := row.Scan(&item.ID, &item.Name, &item.TargetURL, &item.IntervalSeconds, &item.CreatedAt)
+	err := row.Scan(&item.ID, &item.Name, &item.TargetURL, &item.IntervalSeconds, &item.CreatedAt, &item.LastCheckedAt)
 	return item, err
 }
 

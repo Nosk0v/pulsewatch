@@ -4,6 +4,7 @@ import (
 	"context"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/Nosk0v/pulsewatch/internal/apperror"
 )
@@ -14,6 +15,7 @@ type Store interface {
 	FindByID(ctx context.Context, id int64) (Monitor, error)
 	SaveCheck(ctx context.Context, result CheckResult) (CheckResult, error)
 	ListChecks(ctx context.Context, monitorID int64) ([]CheckResult, error)
+	ListDue(ctx context.Context, before time.Time, limit int) ([]Monitor, error)
 }
 
 type MemoryStore struct {
@@ -80,6 +82,14 @@ func (s *MemoryStore) SaveCheck(_ context.Context, result CheckResult) (CheckRes
 	s.nextCheckID++
 	s.checks[result.MonitorID] = append(s.checks[result.MonitorID], result)
 
+	item, ok := s.monitors[result.MonitorID]
+	if !ok {
+		return CheckResult{}, apperror.New(apperror.NotFound, "monitor not found", nil)
+	}
+	checkedAt := result.CheckedAt
+	item.LastCheckedAt = &checkedAt
+	s.monitors[item.ID] = item
+
 	return result, nil
 }
 
@@ -90,6 +100,27 @@ func (s *MemoryStore) ListChecks(_ context.Context, monitorID int64) ([]CheckRes
 	items := append([]CheckResult(nil), s.checks[monitorID]...)
 	if items == nil {
 		items = make([]CheckResult, 0)
+	}
+
+	return items, nil
+}
+
+func (s *MemoryStore) ListDue(_ context.Context, before time.Time, limit int) ([]Monitor, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	items := make([]Monitor, 0)
+	for _, item := range s.monitors {
+		if item.LastCheckedAt == nil || !item.LastCheckedAt.Add(time.Duration(item.IntervalSeconds)*time.Second).After(before) {
+			items = append(items, item)
+		}
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].ID < items[j].ID
+	})
+	if len(items) > limit {
+		items = items[:limit]
 	}
 
 	return items, nil

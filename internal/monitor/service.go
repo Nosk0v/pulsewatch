@@ -69,6 +69,25 @@ func (s *Service) RunCheck(ctx context.Context, id int64) (CheckResult, error) {
 		return CheckResult{}, err
 	}
 
+	return s.runCheck(ctx, item)
+}
+
+func (s *Service) RunDueChecks(ctx context.Context, limit int) (int, error) {
+	items, err := s.store.ListDue(ctx, s.now().UTC(), limit)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, item := range items {
+		if _, err := s.runCheck(ctx, item); err != nil {
+			return 0, err
+		}
+	}
+
+	return len(items), nil
+}
+
+func (s *Service) runCheck(ctx context.Context, item Monitor) (CheckResult, error) {
 	result := s.checker.Check(ctx, item.TargetURL)
 	result.MonitorID = item.ID
 	result.CheckedAt = s.now().UTC()

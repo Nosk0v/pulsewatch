@@ -8,6 +8,7 @@ flowchart LR
     Store --> Memory[In-memory store]
     Store -. phase 2 .-> PostgreSQL
     Service --> Checker[HTTP checker]
+    Scheduler[Background scheduler] --> Service
     Checker --> Target[Monitored URL]
     Docker[Docker Compose] --> API
     Docker --> PostgreSQL
@@ -34,3 +35,4 @@ Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introd
 - `migrations/001_initial_schema.sql` owns the initial PostgreSQL schema: monitors, check results, constraints, and the history lookup index.
 - `PostgresStore` maps database absence to the same `not_found` application error as the in-memory store.
 - Docker Compose starts the API only after PostgreSQL reports healthy, so local startup does not depend on manual ordering.
+- The in-process scheduler polls every 10 seconds and runs a due monitor only after its configured interval has elapsed.

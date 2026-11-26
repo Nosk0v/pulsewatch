@@ -9,6 +9,7 @@ PulseWatch lets you register HTTP endpoints and run availability checks on deman
 - Create and list HTTP monitors;
 - Fetch a monitor by ID;
 - Run a manual HTTP availability check;
+- Schedule recurring checks using each monitor's interval;
 - Validate target URLs and check intervals;
 - Return consistent JSON errors;
 - Test every public endpoint.
@@ -104,6 +105,7 @@ The first phase deliberately runs as one Go process with an in-memory store. Thi
 - [x] Endpoint tests and CI
 - [x] PostgreSQL persistence and migrations
 - [ ] Scheduled checks and background workers
+- [x] Scheduled checks and background worker
 - [ ] Check history and pagination
 - [ ] Docker Compose, metrics, and Grafana dashboard
 
