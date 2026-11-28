@@ -7,6 +7,7 @@ import (
 
 	"github.com/Nosk0v/pulsewatch/internal/apperror"
 	"github.com/Nosk0v/pulsewatch/internal/monitor"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Server struct {
@@ -20,6 +21,7 @@ func NewServer(monitors *monitor.Service) *Server {
 func (s *Server) Routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", s.handleHealth)
+	mux.Handle("GET /metrics", promhttp.Handler())
 	mux.HandleFunc("POST /v1/monitors", s.handleCreateMonitor)
 	mux.HandleFunc("GET /v1/monitors", s.handleListMonitors)
 	mux.HandleFunc("GET /v1/monitors/{id}", s.handleGetMonitor)

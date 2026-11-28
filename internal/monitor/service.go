@@ -96,7 +96,13 @@ func (s *Service) runCheck(ctx context.Context, item Monitor) (CheckResult, erro
 	result.MonitorID = item.ID
 	result.CheckedAt = s.now().UTC()
 
-	return s.store.SaveCheck(ctx, result)
+	saved, err := s.store.SaveCheck(ctx, result)
+	if err != nil {
+		return CheckResult{}, err
+	}
+
+	recordCheck(saved)
+	return saved, nil
 }
 
 func (s *Service) ListChecks(ctx context.Context, id int64) ([]CheckResult, error) {

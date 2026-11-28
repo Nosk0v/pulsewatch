@@ -12,6 +12,8 @@ flowchart LR
     Checker --> Target[Monitored URL]
     Docker[Docker Compose] --> API
     Docker --> PostgreSQL
+    Prometheus -->|scrapes| Metrics[/metrics]
+    API --> Metrics
 ```
 
 ## Scope
@@ -37,3 +39,4 @@ Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introd
 - Docker Compose starts the API only after PostgreSQL reports healthy, so local startup does not depend on manual ordering.
 - The in-process scheduler polls every 10 seconds and runs a due monitor only after its configured interval has elapsed.
 - `GET /healthz` returns `503` if the configured store is unavailable; containers can use it as a readiness check.
+- `GET /metrics` exposes Prometheus metrics, including a per-status counter for completed checks.

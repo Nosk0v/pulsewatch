@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Nosk0v/pulsewatch/internal/monitor"
@@ -48,6 +49,22 @@ func TestHealthReturnsUnavailableWhenStoreFails(t *testing.T) {
 
 	if got := recorder.Body.String(); got != "{\"status\":\"unavailable\"}\n" {
 		t.Fatalf("unexpected body: %s", got)
+	}
+}
+
+func TestMetrics(t *testing.T) {
+	server := NewServer(monitor.NewService(monitor.NewMemoryStore()))
+	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	recorder := httptest.NewRecorder()
+
+	server.Routes().ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, recorder.Code)
+	}
+
+	if !strings.Contains(recorder.Header().Get("Content-Type"), "text/plain") {
+		t.Fatalf("unexpected content type: %s", recorder.Header().Get("Content-Type"))
 	}
 }
 

@@ -19,6 +19,7 @@ PulseWatch lets you register HTTP endpoints and run availability checks on deman
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/healthz` | API and storage readiness check |
+| `GET` | `/metrics` | Prometheus metrics |
 | `POST` | `/v1/monitors` | Create a monitor |
 | `GET` | `/v1/monitors` | List monitors |
 | `GET` | `/v1/monitors/{id}` | Get a monitor |
@@ -98,6 +99,8 @@ docs/                 architecture notes
 ## Architecture
 
 The first phase deliberately runs as one Go process with an in-memory store. This keeps the API and domain boundaries clear before adding infrastructure. See [architecture notes](docs/architecture.md) for the current design and phase-two direction.
+
+Prometheus can scrape `GET /metrics`. PulseWatch exports standard Go process metrics and `pulsewatch_checks_total` labelled by check status.
 
 ## Roadmap
 
