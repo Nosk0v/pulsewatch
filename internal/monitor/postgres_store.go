@@ -32,6 +32,14 @@ func (s *PostgresStore) Close() {
 	s.pool.Close()
 }
 
+func (s *PostgresStore) Ping(ctx context.Context) error {
+	if err := s.pool.Ping(ctx); err != nil {
+		return apperror.New(apperror.Internal, "database unavailable", err)
+	}
+
+	return nil
+}
+
 func (s *PostgresStore) Save(ctx context.Context, item Monitor) (Monitor, error) {
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO monitors (name, target_url, interval_seconds, created_at)

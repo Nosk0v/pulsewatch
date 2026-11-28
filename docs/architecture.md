@@ -20,7 +20,7 @@ Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introd
 
 ## API
 
-- `GET /healthz` — process health;
+- `GET /healthz` — API and storage readiness;
 - `POST /v1/monitors` — create a monitor;
 - `GET /v1/monitors` — list monitors;
 - `GET /v1/monitors/{id}` — read one monitor;
@@ -36,3 +36,4 @@ Phase 1 intentionally used one Go process and an in-memory store. Phase 2 introd
 - `PostgresStore` maps database absence to the same `not_found` application error as the in-memory store.
 - Docker Compose starts the API only after PostgreSQL reports healthy, so local startup does not depend on manual ordering.
 - The in-process scheduler polls every 10 seconds and runs a due monitor only after its configured interval has elapsed.
+- `GET /healthz` returns `503` if the configured store is unavailable; containers can use it as a readiness check.

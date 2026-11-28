@@ -10,12 +10,17 @@ import (
 )
 
 type Store interface {
+	Ping(ctx context.Context) error
 	Save(ctx context.Context, monitor Monitor) (Monitor, error)
 	List(ctx context.Context) ([]Monitor, error)
 	FindByID(ctx context.Context, id int64) (Monitor, error)
 	SaveCheck(ctx context.Context, result CheckResult) (CheckResult, error)
 	ListChecks(ctx context.Context, monitorID int64) ([]CheckResult, error)
 	ListDue(ctx context.Context, before time.Time, limit int) ([]Monitor, error)
+}
+
+func (s *MemoryStore) Ping(_ context.Context) error {
+	return nil
 }
 
 type MemoryStore struct {

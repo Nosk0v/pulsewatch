@@ -18,7 +18,7 @@ PulseWatch lets you register HTTP endpoints and run availability checks on deman
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| `GET` | `/healthz` | Service health check |
+| `GET` | `/healthz` | API and storage readiness check |
 | `POST` | `/v1/monitors` | Create a monitor |
 | `GET` | `/v1/monitors` | List monitors |
 | `GET` | `/v1/monitors/{id}` | Get a monitor |

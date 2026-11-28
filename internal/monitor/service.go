@@ -55,6 +55,10 @@ func (s *Service) List(ctx context.Context) ([]Monitor, error) {
 	return s.store.List(ctx)
 }
 
+func (s *Service) Health(ctx context.Context) error {
+	return s.store.Ping(ctx)
+}
+
 func (s *Service) Get(ctx context.Context, id int64) (Monitor, error) {
 	if id < 1 {
 		return Monitor{}, apperror.New(apperror.Validation, "monitor id must be positive", nil)
